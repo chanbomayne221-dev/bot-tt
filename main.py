@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +34,51 @@ async def main() -> None:
 
     await init_db()
 
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(
+            parse_mode=ParseMode.HTML
+        ),
+    )
+
+    dp = Dispatcher()
+
+    tracker = InteractionTracker(bot)
+
+    dp.include_router(admin_handlers.router)
+    dp.include_router(user_handlers.router)
+    dp.include_router(group_handlers.setup(tracker))
+
+    scheduler = setup_scheduler(bot, tracker)
+    scheduler.start()
+
+    log.info("Bot starting (polling)...")
+
+    try:
+        await bot.delete_webhook(drop_pending_updates=False)
+
+        await dp.start_polling(
+            bot,
+            allowed_updates=dp.resolve_used_update_types(),
+        )
+
+    finally:
+        log.info("Shutting down...")
+
+        try:
+            await tracker.flush_all()
+        except Exception:
+            pass
+
+        scheduler.shutdown(wait=False)
+        await bot.session.close()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(
