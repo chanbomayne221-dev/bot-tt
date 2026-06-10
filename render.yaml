@@ -3,8 +3,8 @@ services:
     name: telegram-interaction-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m bot.main
+    buildCommand: "pip install --upgrade pip && pip install --only-binary=:all: -r requirements.txt"
+    startCommand: "python -m bot.main"
     envVars:
       - key: BOT_TOKEN
         sync: false
@@ -14,3 +14,5 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
