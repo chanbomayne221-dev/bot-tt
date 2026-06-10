@@ -8,9 +8,9 @@ from typing import Optional
 
 from aiogram import Bot
 
-from . import database as db
-from .config import MIN_INTERVAL_PER_USER, UPDATE_DB_INTERVAL, ADMIN_ID
-from .rewards import get_reward_amount, milestone_for
+import database as db
+from config import MIN_INTERVAL_PER_USER, UPDATE_DB_INTERVAL, ADMIN_ID
+from rewards import get_reward_amount, milestone_for
 
 
 class InteractionTracker:
