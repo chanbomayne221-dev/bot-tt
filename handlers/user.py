@@ -5,8 +5,8 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from aiogram.enums import ChatType
 
-from .. import database as db
-from ..rewards import get_rank, next_milestone, get_reward_amount
+import database as db
+from rewards import get_rank, next_milestone, get_reward_amount
 
 router = Router(name="user")
 

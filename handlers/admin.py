@@ -5,8 +5,8 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatType
 
-from .. import database as db
-from ..config import ADMIN_ID
+import database as db
+from config import ADMIN_ID
 
 router = Router(name="admin")
 

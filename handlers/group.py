@@ -5,9 +5,9 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.enums import ChatType
 
-from ..config import GROUP_IDS
-from .. import database as db
-from ..services.tracker import InteractionTracker
+from config import GROUP_IDS
+import database as db
+from services.tracker import InteractionTracker
 
 router = Router(name="group")
 
