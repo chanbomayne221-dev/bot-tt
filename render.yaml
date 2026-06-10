@@ -1,10 +1,11 @@
 services:
-  - type: worker
+  - type: web
     name: telegram-interaction-bot
     env: python
     plan: free
     buildCommand: "pip install --upgrade pip && pip install --only-binary=:all: -r requirements.txt"
     startCommand: "python main.py"
+    healthCheckPath: /health
     envVars:
       - key: BOT_TOKEN
         sync: false

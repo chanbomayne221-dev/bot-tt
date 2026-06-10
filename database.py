@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from .config import DB_PATH
+from config import DB_PATH
 
 _db_lock = asyncio.Lock()
 

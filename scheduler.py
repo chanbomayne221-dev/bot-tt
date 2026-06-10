@@ -6,9 +6,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
 
-from . import database as db
-from .config import TIMEZONE, ADMIN_ID, EVENT_TIMES, EVENT_MIN_INTERACTIONS
-from .services.tracker import InteractionTracker
+import database as db
+from config import TIMEZONE, ADMIN_ID, EVENT_TIMES, EVENT_MIN_INTERACTIONS
+from services.tracker import InteractionTracker
 
 log = logging.getLogger(__name__)
 

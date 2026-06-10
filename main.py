@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiohttp import web
 
 from config import BOT_TOKEN
 from database import init_db
@@ -26,6 +28,33 @@ def setup_logging() -> None:
 
     logging.getLogger("aiogram").setLevel(logging.INFO)
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
+
+async def start_health_server() -> web.AppRunner | None:
+    """Bind Render's PORT for Web Service deploys while the bot keeps polling."""
+    raw_port = os.getenv("PORT", "").strip()
+    if not raw_port:
+        return None
+
+    try:
+        port = int(raw_port)
+    except ValueError:
+        logging.getLogger("bot").warning("Invalid PORT value: %s", raw_port)
+        return None
+
+    async def health(_: web.Request) -> web.Response:
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logging.getLogger("bot").info("Health server listening on port %s", port)
+    return runner
 
 
 async def main() -> None:
@@ -54,6 +83,8 @@ async def main() -> None:
     scheduler = setup_scheduler(bot, tracker)
     scheduler.start()
 
+    health_runner = await start_health_server()
+
     log.info("Bot starting (polling)...")
 
     try:
@@ -77,6 +108,8 @@ async def main() -> None:
             pass
 
         scheduler.shutdown(wait=False)
+        if health_runner is not None:
+            await health_runner.cleanup()
         await bot.session.close()
 
 
