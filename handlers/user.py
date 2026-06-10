@@ -87,7 +87,7 @@ async def cmd_checktt(message: Message) -> None:
 async def cmd_stats(message: Message) -> None:
     from datetime import datetime
     import pytz
-    from ..config import TIMEZONE
+    from config import TIMEZONE
     top = await db.get_top_today(15)
     total = await db.get_today_total()
     today = datetime.now(pytz.timezone(TIMEZONE)).strftime("%Y-%m-%d")
