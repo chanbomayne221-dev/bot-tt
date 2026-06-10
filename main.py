@@ -9,7 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from .config import BOT_TOKEN
-from .database import init_db, close_db
+from .database import init_db
 from .handlers import user as user_handlers
 from .handlers import admin as admin_handlers
 from .handlers import group as group_handlers
@@ -61,7 +61,6 @@ async def main() -> None:
             pass
         scheduler.shutdown(wait=False)
         await bot.session.close()
-        await close_db()
 
 
 if __name__ == "__main__":

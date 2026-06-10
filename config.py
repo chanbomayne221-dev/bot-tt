@@ -19,7 +19,7 @@ if _raw_groups:
             pass
 
 TIMEZONE = "Asia/Ho_Chi_Minh"
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DB_PATH = os.getenv("DB_PATH", "bot_data.db")
 
 # Anti-spam / update intervals (seconds)
 MIN_INTERVAL_PER_USER = 2          # 1 message counted per 2s per user
@@ -39,5 +39,3 @@ if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is not set in environment")
 if not ADMIN_ID:
     raise RuntimeError("ADMIN_ID is not set in environment")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set in environment")

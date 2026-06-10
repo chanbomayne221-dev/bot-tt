@@ -1,59 +1,74 @@
-# Telegram Interaction Bot (aiogram 3 + Supabase Postgres)
+# Telegram Interaction Bot (aiogram 3 + SQLite)
 
-Bot theo dõi tương tác trong group Telegram, trao giftcode theo mốc, ranking, ban/unban, chạy 24/7 trên Render bằng polling.
+Bot theo dõi tương tác chat trong group Telegram, tự phát giftcode theo mốc, có anti-spam, danh hiệu, top hôm nay và quản trị admin. Chạy polling 24/7 trên Render.
 
-## 1. Tạo Supabase project (làm DB)
+## Cấu trúc
 
-1. Vào https://supabase.com → **New project** → đặt password mạnh, chọn region gần (Singapore).
-2. Đợi project tạo xong → vào **Project Settings → Database → Connection string**.
-3. Chọn tab **Transaction pooler** (port **6543**) — bắt buộc cho Render vì connection ổn định hơn.
-4. Copy URI, ví dụ:
-   ```
-   postgresql://postgres.abcdxyz:YOUR-PASSWORD@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
-   ```
-5. Thay `YOUR-PASSWORD` bằng password DB bạn vừa đặt.
+```
+bot/
+├── main.py              # entrypoint (polling)
+├── config.py            # đọc .env
+├── database.py          # SQLite (aiosqlite)
+├── rewards.py           # bảng mốc thưởng + danh hiệu
+├── scheduler.py         # APScheduler (reset 00:00 VN, event 12:00/20:30/23:59)
+├── services/tracker.py  # đếm tương tác + anti-spam + flush 8s
+├── handlers/
+│   ├── user.py          # /start /checktt /stats (private)
+│   ├── admin.py         # /admin /addcode /stock /bantt /unbantt
+│   └── group.py         # đếm tin trong các group được cấu hình
+├── requirements.txt
+├── render.yaml
+├── Procfile
+└── .env.example
+```
 
-> Schema bảng sẽ tự tạo lần đầu bot chạy (`init_db()`).
+## Cấu hình `.env`
 
-## 2. Tạo bot Telegram
+```
+BOT_TOKEN=123:abcdef
+ADMIN_ID=123456789
+GROUP_IDS=-1001234567890,-1009876543210
+```
 
-- Mở @BotFather → `/newbot` → copy `BOT_TOKEN`.
-- Lấy `ADMIN_ID` của bạn từ @userinfobot.
-- Thêm bot vào group, bật quyền đọc tin nhắn (tắt Privacy Mode trong BotFather: `/setprivacy` → Disable).
-- Lấy `group_id` (số âm bắt đầu bằng `-100...`).
-
-## 3. Cấu hình local (tuỳ chọn để test)
+## Chạy local
 
 ```bash
 cd bot
-cp .env.example .env
-# điền BOT_TOKEN, ADMIN_ID, GROUP_IDS, DATABASE_URL
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env  # điền BOT_TOKEN, ADMIN_ID, GROUP_IDS
 python -m bot.main
 ```
 
-## 4. Deploy Render
+Lưu ý: chạy từ thư mục cha (project root) hoặc package path `bot.main` vẫn hoạt động vì `bot/` là package.
 
-1. Push repo lên GitHub.
-2. Vào https://render.com → **New → Background Worker** → connect repo.
-3. Render sẽ đọc `render.yaml`. Set các Environment Variables:
-   - `BOT_TOKEN`
-   - `ADMIN_ID`
-   - `GROUP_IDS` (cách nhau dấu phẩy)
-   - `DATABASE_URL` (connection string Supabase ở bước 1)
-4. Deploy. Log sẽ hiện `Bot starting (polling)...`.
+## Deploy Render (Background Worker, polling — KHÔNG webhook)
 
-## 5. Lệnh chính
+1. Push repo lên GitHub (kèm thư mục `bot/`).
+2. Vào https://dashboard.render.com → **New +** → **Blueprint** → chọn repo. Render đọc `bot/render.yaml`.
+   - Nếu không dùng Blueprint: **New +** → **Background Worker** → repo của bạn → cài thủ công:
+     - Environment: `Python 3`
+     - Build Command: `pip install -r bot/requirements.txt`
+     - Start Command: `python -m bot.main` (nhớ đặt Root Directory = `bot` hoặc dùng `python -m bot.main` từ root nếu để nguyên).
+3. Thêm Environment Variables: `BOT_TOKEN`, `ADMIN_ID`, `GROUP_IDS`.
+4. Deploy. Log sẽ in `Bot starting (polling)...`.
 
-- `/start` (DM): bật DM + xem hướng dẫn
-- `/checktt` (DM): xem tương tác + rank + mốc tiếp theo
-- `/stats`: top 15 hôm nay
-- `/admin`: menu quản trị (chỉ ADMIN_ID)
-- `/addcode <mốc> <code>`: nạp giftcode (admin)
-- `/bantt @user` / `/unbantt @user`: ban/unban tương tác
+**Quan trọng:** dùng **Worker** (không phải Web Service) vì bot không cần mở port HTTP. Render Free Worker phù hợp; nếu cần 24/7 ổn định 100%, dùng plan trả phí (Free Worker có thể bị giới hạn giờ chạy).
 
-## Lưu ý
+## Lệnh
 
-- Dùng **Transaction Pooler** (6543) → đã set `statement_cache_size=0` để tương thích pgbouncer.
-- Reset `today_messages` chạy lúc 00:00 giờ VN mỗi ngày.
-- Dữ liệu persist trong Supabase, deploy lại Render KHÔNG mất data.
+- `/start` (private): bật DM, hiện hướng dẫn.
+- `/checktt` (private): xem tương tác cá nhân.
+- `/stats` (private): top 15 hôm nay.
+- `/admin` (ADMIN): menu inline.
+- `/addcode <mốc> <code>` (ADMIN): thêm code vào kho. Có thể truyền nhiều code cách nhau bằng dấu cách hoặc xuống dòng.
+- `/stock` (ADMIN): xem tồn kho.
+- `/bantt @user` hoặc reply (ADMIN): cấm tính tương tác.
+- `/unbantt @user` hoặc reply (ADMIN): bỏ cấm.
+
+## Cơ chế
+
+- **Anti-spam:** mỗi user tối đa 1 tin / 2s được tính. Đếm trong RAM, **flush DB mỗi 8s/user**.
+- **Reward:** khi today_messages vượt mốc 100/200/... bot tự lấy code khả dụng từ `reward_codes`, đánh `used=1`, ghi vào `claimed_rewards`, DM cho user. Hết code → báo ADMIN.
+- **Reset 00:00 Asia/Ho_Chi_Minh:** `today_messages=0` và `highest_reward=0` (cho phép nhận lại mốc ngày mới); `total_messages` giữ nguyên.
+- **Event 12:00 / 20:30 / 23:59:** bot gửi ADMIN danh sách user ≥ 500 tin hôm nay.
