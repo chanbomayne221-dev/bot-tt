@@ -45,51 +45,6 @@ async def main() -> None:
 
     tracker = InteractionTracker(bot)
 
-    dp.include_router(admin_handlers.router)
-    dp.include_router(user_handlers.router)
-    dp.include_router(group_handlers.setup(tracker))
-
-    scheduler = setup_scheduler(bot, tracker)
-    scheduler.start()
-
-    log.info("Bot starting (polling)...")
-
-    try:
-        await bot.delete_webhook(drop_pending_updates=False)
-
-        await dp.start_polling(
-            bot,
-            allowed_updates=dp.resolve_used_update_types(),
-        )
-
-    finally:
-        log.info("Shutting down...")
-
-        try:
-            await tracker.flush_all()
-        except Exception:
-            pass
-
-        scheduler.shutdown(wait=False)
-        await bot.session.close()
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        pass
-    bot = Bot(
-        token=BOT_TOKEN,
-        default=DefaultBotProperties(
-            parse_mode=ParseMode.HTML
-        ),
-    )
-
-    dp = Dispatcher()
-
-    tracker = InteractionTracker(bot)
-
     # Routers
     dp.include_router(admin_handlers.router)
     dp.include_router(user_handlers.router)
@@ -102,11 +57,12 @@ if __name__ == "__main__":
     log.info("Bot starting (polling)...")
 
     try:
-        # đảm bảo polling chạy ổn
+        # Xóa webhook cũ nếu có
         await bot.delete_webhook(
             drop_pending_updates=False
         )
 
+        # Start bot polling
         await dp.start_polling(
             bot,
             allowed_updates=dp.resolve_used_update_types(),
@@ -129,4 +85,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         pass
-```
